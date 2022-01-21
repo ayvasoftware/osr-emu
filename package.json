@@ -1,0 +1,24 @@
+{
+  "name": "osr-emu",
+  "version": "0.0.1",
+  "description": "A web-based graphical emulator for open source strokers.",
+  "main": "osr-emu.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ayvajs/osr-emu.git"
+  },
+  "keywords": [
+    "osr",
+    "osr2",
+    "sr6",
+    "stroker",
+    "multi-axis",
+    "robot"
+  ],
+  "author": "soritesparadox",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ayvajs/osr-emu/issues"
+  },
+  "homepage": "https://github.com/ayvajs/osr-emu#readme"
+}
