@@ -11,7 +11,9 @@ import pitcherGeometry from './models/pitcher.js';
 import receiverGeometry from './models/receiver.js';
 import supportArmGeometry from './models/support-arm.js';
 
-const cameraPosition = { x: -305, y: 478, z: 134 };
+const cameraPosition = { x: 245.03116537126925, y: 427.3026288938325, z: 190.74318476308787 };
+const cameraTarget = { x: -36.81235747311321, y: 6.186822929643268, z: 15.874049352801714 };
+
 const deg = THREE.MathUtils.degToRad;
 const receiverMaterial = new THREE.MeshLambertMaterial({ color: 0x3f5173 });
 const baseMaterial = new THREE.MeshLambertMaterial({ color: 0x1E1E1E });
@@ -115,6 +117,7 @@ export default class OSREmulator {
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.maxDistance = 700;
+    controls.target.set(cameraTarget.x, cameraTarget.y, cameraTarget.z);
     controls.update();
 
     this.camera = camera;
