@@ -1,5 +1,5 @@
 # osr-emu
-OSR Emulator is a simple, web-based graphical emulator for <a href="https://www.patreon.com/tempestvr" target="_blank">Open Source Multi Axis Stroker Robots</a>. TCode can be sent to an instance of the emulator as if it were an actual device, and the movements that would be generated are simulated on a 3D model of an OSR.
+A simple, web-based graphical emulator for <a href="https://www.patreon.com/tempestvr" target="_blank">Open Source Multi Axis Stroker Robots</a>. TCode can be sent to an instance of the emulator as if it were an actual device, and the movements that would be generated are simulated on a 3D model of an OSR.
 
 The following axes are currently supported: L0 (stroke/up), R0 (twist), R1 (roll), R2 (pitch)
 
