@@ -34,6 +34,15 @@ export default class OSREmulator {
     'R2': new Axis('R2'), // Pitch
   };
 
+  #scale = {
+    'L0': 1, // Stroke
+    'L1': 1, // Forward
+    'L2': 1, // Left
+    'R0': 1, // Twist
+    'R1': 1, // Roll
+    'R2': 1, // Pitch
+  };
+
   #element;
   #orientation = -Math.PI / 2; // Rotation around the x-axis.
   #armAxisLength = 139.5;
@@ -52,7 +61,7 @@ export default class OSREmulator {
     return result;
   }
 
-  constructor (element) {
+  constructor (element, options) {
     if (element instanceof HTMLElement) {
       this.#element = element;
     } else if (typeof element === 'string' || element instanceof String) {
@@ -63,6 +72,10 @@ export default class OSREmulator {
       }
     } else {
       throw new Error(`Invalid element: ${element}`);
+    }
+
+    if (options && options.scale) {
+      this.#scale = { ...this.#scale, ...options.scale };
     }
 
     this.#initCanvas(this.#element);
@@ -229,19 +242,24 @@ export default class OSREmulator {
   }
 
   #calculateReceiverPosition () {
+    const L0_SCALE = this.#scale['L0'];
+    const R0_SCALE = this.#scale['R0'];
+    const R1_SCALE = this.#scale['R1'];
+    const R2_SCALE = this.#scale['R2'];
+
     const receiverAxisLength = this.#armAxisLength + this.#armZOffset;
-    const theta = this.axes['L0'] * deg(90) - deg(45);
+    const theta = this.axes['L0'] * deg(90 * L0_SCALE) - deg(45 * L0_SCALE);
     
     const y = -receiverAxisLength * Math.sin(theta);
     const z = receiverAxisLength * Math.cos(theta);
 
-    const roll = this.axes['R1'] * deg(60) - deg(30);
-    const pitch = this.axes['R2'] * deg(60) - deg(30);
+    const roll = this.axes['R1'] * deg(60 * R1_SCALE) - deg(30 * R1_SCALE);
+    const pitch = this.axes['R2'] * deg(60 * R2_SCALE) - deg(30 * R2_SCALE);
     this.meshes.receiver.position.set(0, y + this.#armYOffset, z);
     this.meshes.receiver.rotation.set(pitch, 0, roll);
 
     this.meshes.modCase.position.set(0, y + this.#armYOffset, z);
-    this.meshes.modCase.rotation.set(deg(90) + pitch, roll, this.axes['R0'] * deg(240) - deg(120));
+    this.meshes.modCase.rotation.set(deg(90) + pitch, roll, this.axes['R0'] * deg(240 * R0_SCALE) - deg(120  * R0_SCALE));
   }
 
   #calculateArmPositions () {
