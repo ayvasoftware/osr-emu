@@ -1,6 +1,6 @@
 {
   "name": "osr-emu",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A web-based graphical emulator for open source strokers.",
   "main": "osr-emu.js",
   "repository": {
