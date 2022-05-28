@@ -115,8 +115,6 @@ export default class OSREmulator {
         const extValue = match[4];
 
         this.#axes[axis].set(parseValue(value), ext, Number(extValue));
-      } else {
-        console.warn(`Cannot execute command '${command}'. Only updates on linear or rotation channels 0-2 are supported.`);
       }
     }
   }
