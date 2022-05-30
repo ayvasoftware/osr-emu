@@ -51,6 +51,10 @@ export default class OSREmulator {
   #supportAxisLength = 140;
   #objLoader = new OBJLoader();
 
+  #resizeObserver;
+  #boundResizeListener;
+  #animationFrameRequestId;
+
   get axes () {
     const result = {};
 
@@ -78,7 +82,7 @@ export default class OSREmulator {
       this.#scale = { ...this.#scale, ...options.scale };
     }
 
-    this.#initCanvas(this.#element);
+    this.#initCanvas();
   }
 
   write (input) {
@@ -94,6 +98,13 @@ export default class OSREmulator {
         this.#buffer = '';
       }
     }
+  }
+
+  destroy () {
+    this.#resizeObserver.unobserve(this.#element);
+    window.removeEventListener('resize', this.#boundResizeListener);
+    window.cancelAnimationFrame(this.#animationFrameRequestId);
+    this.#element.innerHTML = '';
   }
 
   #executeCommand (buffer) {
@@ -119,7 +130,7 @@ export default class OSREmulator {
     }
   }
 
-  #initCanvas (element) {
+  #initCanvas () {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(50, this.#computeAspectRatio(), 0.1, 1000);
     const renderer = new THREE.WebGLRenderer();
@@ -139,16 +150,18 @@ export default class OSREmulator {
     this.#setupLighting(scene);
     this.#loadAllModels(scene);
 
-    element.appendChild(renderer.domElement);
+    this.#element.innerHTML = '';
+    this.#element.appendChild(renderer.domElement);
 
     this.#buffer = '';
 
     this.#resize();
     this.#animate();
 
-    const onResize = this.#resize.bind(this);
-    new ResizeObserver(onResize).observe(this.#element);
-    window.addEventListener('resize', onResize);
+    this.#boundResizeListener = this.#resize.bind(this);
+    this.#resizeObserver = new ResizeObserver(this.#boundResizeListener);
+    this.#resizeObserver.observe(this.#element);
+    window.addEventListener('resize', this.#boundResizeListener);
   }
 
   #render () {
@@ -156,7 +169,7 @@ export default class OSREmulator {
   }
 
   #animate () {
-    requestAnimationFrame(this.#animate.bind(this));
+    this.#animationFrameRequestId = requestAnimationFrame(this.#animate.bind(this));
     this.controls.update();
     this.#updatePositions();
     this.#render();
