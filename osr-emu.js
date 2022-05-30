@@ -105,6 +105,8 @@ export default class OSREmulator {
     window.removeEventListener('resize', this.#boundResizeListener);
     window.cancelAnimationFrame(this.#animationFrameRequestId);
     this.#element.innerHTML = '';
+    this.renderer.dispose();
+    this.renderer.forceContextLoss();
   }
 
   #executeCommand (buffer) {
