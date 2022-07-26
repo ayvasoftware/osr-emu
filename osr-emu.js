@@ -266,13 +266,13 @@ export default class OSREmulator {
     const y = -receiverAxisLength * Math.sin(theta);
     const z = receiverAxisLength * Math.cos(theta);
 
-    const roll = this.axes['R1'] * deg(60 * R1_SCALE) - deg(30 * R1_SCALE);
-    const pitch = deg(30 * R2_SCALE) - this.axes['R2'] * deg(60 * R2_SCALE);
+    const roll = deg(30 * R1_SCALE) - this.axes['R1'] * deg(60 * R1_SCALE);
+    const pitch = this.axes['R2'] * deg(60 * R2_SCALE) - deg(30 * R2_SCALE);
     this.meshes.receiver.position.set(0, y + this.#armYOffset, z);
     this.meshes.receiver.rotation.set(pitch, 0, roll);
 
     this.meshes.modCase.position.set(0, y + this.#armYOffset, z);
-    this.meshes.modCase.rotation.set(deg(90) + pitch, roll, deg(120  * R0_SCALE) - this.axes['R0'] * deg(240 * R0_SCALE));
+    this.meshes.modCase.rotation.set(deg(90) + pitch, roll, this.axes['R0'] * deg(240 * R0_SCALE) - deg(120  * R0_SCALE));
   }
 
   #calculateArmPositions () {
