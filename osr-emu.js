@@ -1,6 +1,6 @@
-import { OBJLoader } from 'https://cdn.jsdelivr.net/npm/three@0.127.0/examples/jsm/loaders/OBJLoader.js';
-import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.127.0/examples/jsm/controls/OrbitControls.js';
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.127.0/build/three.module.js';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import * as THREE from 'three';
 import Axis from './axis.js';
 import mainArmGeometry from './models/arm.js';
 import baseGeometry from './models/base.js';
@@ -22,7 +22,7 @@ const COMMAND_REGEX = /^(L0|L1|L2|R0|R1|R2)([0-9]+)$/;
 const COMMAND_EXTENSION_REGEX = /^(L0|L1|L2|R0|R1|R2)([0-9]+)(I|S)([0-9]+)$/;
 const Vector3 = THREE.Vector3;
 
-export default class OSREmulator {
+class OSREmulator {
   #buffer = '';
 
   #axes = {
@@ -312,3 +312,8 @@ export default class OSREmulator {
     );
   }
 }
+
+// Allow importing as named or default.
+// TODO: Remove default export once updated elsewhere.
+export default OSREmulator;
+export { OSREmulator };
