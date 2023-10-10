@@ -1,31 +1,19 @@
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as THREE from 'three';
-import Axis from './axis.js';
-import mainArmGeometry from './models/arm.js';
-import baseGeometry from './models/base.js';
-import caseGeometry from './models/case.js';
-import lidGeometry from './models/lid.js';
-import pitcherArmGeometry from './models/pitcher-arm.js';
-import pitcherGeometry from './models/pitcher.js';
-import receiverGeometry from './models/receiver.js';
-import supportArmGeometry from './models/support-arm.js';
+import Axis from './lib/axis.js';
+import OSR2Model from './lib/models/osr2/osr2.js';
 
 const cameraPosition = { x: 245.03116537126925, y: 427.3026288938325, z: 190.74318476308787 };
 const cameraTarget = { x: -36.81235747311321, y: 6.186822929643268, z: 15.874049352801714 };
 
-const deg = THREE.MathUtils.degToRad;
-const receiverMaterial = new THREE.MeshLambertMaterial({ color: 0x3f5173 });
-const baseMaterial = new THREE.MeshLambertMaterial({ color: 0x1E1E1E });
-
 const COMMAND_REGEX = /^(L0|L1|L2|R0|R1|R2)([0-9]+)$/;
 const COMMAND_EXTENSION_REGEX = /^(L0|L1|L2|R0|R1|R2)([0-9]+)(I|S)([0-9]+)$/;
-const Vector3 = THREE.Vector3;
 
 class OSREmulator {
   #buffer = '';
 
-  #axes = {
+  #axisEmulator = {
     'L0': new Axis('L0'), // Stroke
     'L1': new Axis('L1'), // Forward
     'L2': new Axis('L2'), // Left
@@ -44,22 +32,20 @@ class OSREmulator {
   };
 
   #element;
-  #orientation = -Math.PI / 2; // Rotation around the x-axis.
-  #armAxisLength = 139.5;
-  #armZOffset = 18.22;
-  #armYOffset = -5;
-  #supportAxisLength = 140;
-  #objLoader = new OBJLoader();
+  #osrModel;
 
   #resizeObserver;
   #boundResizeListener;
   #animationFrameRequestId;
 
+  /**
+   * Get a map of axis name to current decimal value (between zero and one).
+   */
   get axes () {
     const result = {};
 
-    Object.keys(this.#axes).forEach(axis => {
-      result[axis] = this.#axes[axis].getPosition() / 10000;
+    Object.keys(this.#axisEmulator).forEach(axis => {
+      result[axis] = this.#axisEmulator[axis].getPosition() / 10000;
     });
 
     return result;
@@ -119,7 +105,7 @@ class OSREmulator {
         const axis = match[1];
         const value = match[2];
 
-        this.#axes[axis].set(parseValue(value));
+        this.#axisEmulator[axis].set(parseValue(value));
       } else if (COMMAND_EXTENSION_REGEX.test(command)) {
         const match = COMMAND_EXTENSION_REGEX.exec(command);
         const axis = match[1];
@@ -127,7 +113,7 @@ class OSREmulator {
         const ext = match[3];
         const extValue = match[4];
 
-        this.#axes[axis].set(parseValue(value), ext, Number(extValue));
+        this.#axisEmulator[axis].set(parseValue(value), ext, Number(extValue));
       }
     }
   }
@@ -150,7 +136,7 @@ class OSREmulator {
     this.controls = controls;
 
     this.#setupLighting(scene);
-    this.#loadAllModels(scene);
+    this.#loadModel(scene);
 
     this.#element.innerHTML = '';
     this.#element.appendChild(renderer.domElement);
@@ -196,120 +182,25 @@ class OSREmulator {
     scene.add(sunlight);
   }
 
-  #loadObj (text, material) {
-    const object = this.#objLoader.parse(text);
-
-    object.traverse(function(child) {
-      if (child instanceof THREE.Mesh) {
-        child.material = material;
-      }
-    });
-
-    return object;
-  }
-
-  #loadAllModels (scene) {
-    const modCase = this.#loadObj(caseGeometry, baseMaterial);
-    const base = this.#loadObj(baseGeometry, baseMaterial);
-    const receiver = this.#loadObj(receiverGeometry, receiverMaterial);
-    const rightArm = this.#loadObj(mainArmGeometry, baseMaterial);
-    const leftArm = this.#loadObj(mainArmGeometry, baseMaterial);
-    const supportArm = this.#loadObj(supportArmGeometry, baseMaterial);
-    const lid = this.#loadObj(lidGeometry, receiverMaterial);
-    const pitcher = this.#loadObj(pitcherGeometry, baseMaterial);
-    const pitcherArm = this.#loadObj(pitcherArmGeometry, baseMaterial);
-
-    pitcherArm.position.set(73.973, 6.3454, 18.857);
-
+  #loadModel (scene) {
+    this.#osrModel = new OSR2Model();
+    
     const osrGroup = new THREE.Group();
 
-    this.meshes = {
-      base,
-      receiver,
-      leftArm,
-      rightArm,
-      supportArm,
-      lid,
-      pitcher,
-      pitcherArm,
-      modCase,
-    };
+    const { meshes, orientation } = this.#osrModel.load();
 
-    osrGroup.add(receiver);
-    osrGroup.add(leftArm);
-    osrGroup.add(rightArm);
-    osrGroup.add(base);
-    osrGroup.add(lid);
-    osrGroup.add(supportArm);
-    osrGroup.add(pitcher);
-    osrGroup.add(pitcherArm);
-    osrGroup.add(modCase);
-    osrGroup.rotation.set(this.#orientation, 0, 0);
+    for (const mesh of Object.values(meshes)) {
+      osrGroup.add(mesh);
+    }
+
+    osrGroup.rotation.set(orientation, 0, 0);
     scene.add(osrGroup);
   }
 
   #updatePositions () {
-    this.#calculateReceiverPosition();
-    this.#render(); // We need the world coordinates of the receiver to update because the arm orientation depends on them.
-    this.#calculateArmPositions();
-  }
-
-  #calculateReceiverPosition () {
-    const L0_SCALE = this.#scale['L0'];
-    const R0_SCALE = this.#scale['R0'];
-    const R1_SCALE = this.#scale['R1'];
-    const R2_SCALE = this.#scale['R2'];
-
-    const receiverAxisLength = this.#armAxisLength + this.#armZOffset;
-    const theta = this.axes['L0'] * deg(90 * L0_SCALE) - deg(45 * L0_SCALE);
-    
-    const y = -receiverAxisLength * Math.sin(theta);
-    const z = receiverAxisLength * Math.cos(theta);
-
-    const roll = deg(30 * R1_SCALE) - this.axes['R1'] * deg(60 * R1_SCALE);
-    const pitch = this.axes['R2'] * deg(60 * R2_SCALE) - deg(30 * R2_SCALE);
-    this.meshes.receiver.position.set(0, y + this.#armYOffset, z);
-    this.meshes.receiver.rotation.set(pitch, 0, roll);
-
-    this.meshes.modCase.position.set(0, y + this.#armYOffset, z);
-    this.meshes.modCase.rotation.set(deg(90) + pitch, roll, this.axes['R0'] * deg(240 * R0_SCALE) - deg(120  * R0_SCALE));
-  }
-
-  #calculateArmPositions () {
-    this.#calculateArm(this.meshes.rightArm, this.#armAxisLength, -67, this.#armYOffset, 18.22, -65, 0, 0);
-    this.#calculateArm(this.meshes.leftArm, this.#armAxisLength, 67, this.#armYOffset, 18.22, 63, 0, 0);
-    this.#calculateArm(this.meshes.supportArm, this.#supportAxisLength, 66.385, -33.243 + this.#armYOffset, 18.558, 64, -40, 0);
-  }
-
-  #calculateArm(arm, armLength, ax, ay, az, rx, ry, rz) {
-    const receiverPosition = this.#receiverToWorldCoordinates(rx, ry, rz);
-    const armPosition = new Vector3(ax, ay, az)
-      .sub(receiverPosition)
-      .normalize()
-      .multiplyScalar(armLength)
-      .add(receiverPosition);
-
-    const x = receiverPosition.x - armPosition.x;
-    const y = receiverPosition.y - armPosition.y;
-    const z = receiverPosition.z - armPosition.z;
-
-    const pitch = z !== 0 ? -Math.atan(y / z) : 0;
-    const yaw = z !== 0 ? Math.atan(x / z) : 0;
-    const roll = this.axes['R1'] * deg(60) - deg(30);
-
-    arm.position.set(armPosition.x, armPosition.y, armPosition.z);
-    arm.rotation.set(pitch, yaw, roll);
-  }
-
-  #receiverToWorldCoordinates (x, y, z) {
-    const angle = -this.#orientation;
-    const world = this.meshes.receiver.localToWorld(new Vector3(x, y, z));
-
-    return new Vector3(
-      world.x,
-      world.y * Math.cos(angle) - world.z * Math.sin(angle),
-      world.y * Math.sin(angle) + world.z * Math.cos(angle),
-    );
+    this.#osrModel.preRender(this.axes, this.#scale);
+    this.#render();
+    this.#osrModel.postRender(this.axes, this.#scale);
   }
 }
 
