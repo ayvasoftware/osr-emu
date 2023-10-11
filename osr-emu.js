@@ -2,6 +2,7 @@
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as THREE from 'three';
 import Axis from './lib/axis.js';
+import { forEachMesh } from './lib/util.js';
 import OSR2Model from './lib/models/osr2/osr2.js';
 
 const cameraPosition = { x: 245.03116537126925, y: 427.3026288938325, z: 190.74318476308787 };
@@ -33,6 +34,8 @@ class OSREmulator {
 
   #element;
   #osrModel;
+  #modelType;
+  #helpers;
 
   #resizeObserver;
   #boundResizeListener;
@@ -64,9 +67,9 @@ class OSREmulator {
       throw new Error(`Invalid element: ${element}`);
     }
 
-    if (options && options.scale) {
-      this.#scale = { ...this.#scale, ...options.scale };
-    }
+    this.#scale = { ...this.#scale, ...(options?.scale || {}) };
+    this.#helpers = options?.helpers || false;
+    this.#modelType = options?.model ?? 'OSR2';
 
     this.#initCanvas();
   }
@@ -120,10 +123,14 @@ class OSREmulator {
 
   #initCanvas () {
     const scene = new THREE.Scene();
+
     const camera = new THREE.PerspectiveCamera(50, this.#computeAspectRatio(), 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer();
     camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
     camera.up.set(0, 0, 1);
+
+    const renderer = new THREE.WebGLRenderer();
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.maxDistance = 700;
@@ -176,10 +183,43 @@ class OSREmulator {
   }
 
   #setupLighting (scene) {
-    const sunlight = new THREE.DirectionalLight(0xFFFFFF, 1);
-    sunlight.position.set(-1, 1, 1);
-    scene.add(new THREE.AmbientLight(0xAAAAAA));
-    scene.add(sunlight);
+    const keyLight = new THREE.PointLight(0xFFFFFF);
+    keyLight.intensity = 0.75;
+    keyLight.position.set(200, 180, 50);
+    keyLight.castShadow = true;
+
+    const fillLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+    fillLight.intensity = 1;
+    fillLight.position.set(-225, 225, 225);
+    fillLight.castShadow = true;
+    for (const side of ['left', 'right', 'bottom', 'top']) {
+      fillLight.shadow.camera[side] *= 25;
+    }
+
+    const backLight = new THREE.PointLight(0xFFFFFF);
+    backLight.intensity = 1;
+    backLight.position.set(70, -100, 200);
+    backLight.castShadow = true;
+
+    const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.625);
+
+    this.keyLight = keyLight;
+    this.fillLight = fillLight;
+    this.backLight = backLight;
+    this.ambientLight = ambientLight;
+
+    scene.add(keyLight);
+    scene.add(fillLight);
+    scene.add(backLight);
+    scene.add(ambientLight);
+
+    if (this.#helpers) {
+      scene.add(new THREE.DirectionalLightHelper(fillLight, 100));
+      scene.add(new THREE.CameraHelper(fillLight.shadow.camera));
+      scene.add(new THREE.PointLightHelper( keyLight, 5 ));
+      scene.add(new THREE.PointLightHelper( backLight, 5 ));
+      scene.add(new THREE.AxesHelper( 500 ));
+    }
   }
 
   #loadModel (scene) {
@@ -187,10 +227,15 @@ class OSREmulator {
     
     const osrGroup = new THREE.Group();
 
-    const { meshes, orientation } = this.#osrModel.load();
+    const { objects, orientation } = this.#osrModel.load();
 
-    for (const mesh of Object.values(meshes)) {
-      osrGroup.add(mesh);
+    for (const object of Object.values(objects)) {
+      forEachMesh(object, (mesh) => {
+        mesh.receiveShadow = true;
+        mesh.castShadow = true;
+      });
+
+      osrGroup.add(object);
     }
 
     osrGroup.rotation.set(orientation, 0, 0);
