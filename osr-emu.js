@@ -35,11 +35,16 @@ class OSREmulator {
   #element;
   #osrModel;
   #modelType;
-  #helpers;
+  #sceneHelpers;
+  #objectHelpers;
 
   #resizeObserver;
   #boundResizeListener;
   #animationFrameRequestId;
+
+  get osrModel () {
+    return this.#osrModel;
+  }
 
   /**
    * Get a map of axis name to current decimal value (between zero and one).
@@ -52,6 +57,14 @@ class OSREmulator {
     });
 
     return result;
+  }
+
+  get objectHelpers () {
+    return this.#objectHelpers;
+  }
+
+  get sceneHelpers () {
+    return this.#sceneHelpers;
   }
 
   constructor (element, options) {
@@ -68,7 +81,8 @@ class OSREmulator {
     }
 
     this.#scale = { ...this.#scale, ...(options?.scale || {}) };
-    this.#helpers = options?.helpers || false;
+    this.#sceneHelpers = options?.sceneHelpers ? [] : null;
+    this.#objectHelpers = options?.objectHelpers ? [] : null;
     this.#modelType = options?.model ?? 'OSR2';
 
     this.#initCanvas();
@@ -213,12 +227,16 @@ class OSREmulator {
     scene.add(backLight);
     scene.add(ambientLight);
 
-    if (this.#helpers) {
-      scene.add(new THREE.DirectionalLightHelper(fillLight, 100));
-      scene.add(new THREE.CameraHelper(fillLight.shadow.camera));
-      scene.add(new THREE.PointLightHelper( keyLight, 5 ));
-      scene.add(new THREE.PointLightHelper( backLight, 5 ));
-      scene.add(new THREE.AxesHelper( 500 ));
+    if (this.#sceneHelpers) {
+      this.#sceneHelpers = this.#sceneHelpers.concat([
+        new THREE.DirectionalLightHelper(fillLight, 100),
+        new THREE.CameraHelper(fillLight.shadow.camera),
+        new THREE.PointLightHelper( keyLight, 5 ),
+        new THREE.PointLightHelper( backLight, 5 ),
+        new THREE.AxesHelper( 500 )
+      ]);
+
+      this.#sceneHelpers.forEach(h => scene.add(h));
     }
   }
 
@@ -236,6 +254,17 @@ class OSREmulator {
       });
 
       osrGroup.add(object);
+
+      if (this.#objectHelpers) {
+        const helper = new THREE.AxesHelper(100);
+
+        osrGroup.add(helper);
+        
+        this.#objectHelpers.push({
+          object,
+          helper,
+        });
+      }
     }
 
     osrGroup.rotation.set(orientation, 0, 0);
@@ -246,6 +275,14 @@ class OSREmulator {
     this.#osrModel.preRender(this.axes, this.#scale);
     this.#render();
     this.#osrModel.postRender(this.axes, this.#scale);
+
+    // Update the position of object helpers if enabled.
+    if (this.#objectHelpers) {
+      for (const { object, helper } of this.#objectHelpers) {
+        helper.position.set(object.position.x, object.position.y, object.position.z);
+        helper.rotation.set(object.rotation.x, object.rotation.y, object.rotation.z);
+      }
+    }
   }
 }
 
