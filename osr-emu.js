@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import Axis from './lib/axis.js';
 import { forEachMesh } from './lib/util.js';
 import OSR2Model from './lib/models/osr2/osr2.js';
+import SR6Model from './lib/models/sr6/sr6.js';
 
 const cameraPosition = { x: 245.03116537126925, y: 427.3026288938325, z: 190.74318476308787 };
 const cameraTarget = { x: -36.81235747311321, y: 6.186822929643268, z: 15.874049352801714 };
@@ -241,7 +242,7 @@ class OSREmulator {
   }
 
   #loadModel (scene) {
-    this.#osrModel = new OSR2Model();
+    this.#osrModel = this.#modelType == 'OSR2' ? new OSR2Model() : new SR6Model();
     
     const osrGroup = new THREE.Group();
 
