@@ -6,8 +6,11 @@ import { forEachMesh } from './lib/util.js';
 import OSR2Model from './lib/models/osr2/osr2.js';
 import SR6Model from './lib/models/sr6/sr6.js';
 
-const cameraPosition = { x: 245.03116537126925, y: 427.3026288938325, z: 190.74318476308787 };
-const cameraTarget = { x: -36.81235747311321, y: 6.186822929643268, z: 15.874049352801714 };
+const cameraPosition = new THREE.Vector3(245.03116537126925, 427.3026288938325, 190.74318476308787);
+const cameraPositionSR6 = new THREE.Vector3(298.31971529530864, 534.7032158432635, 222.42991840453462);
+
+const cameraTarget = new THREE.Vector3(-36.81235747311321, 6.186822929643268, 15.874049352801714);
+const cameraTargetSR6 = new THREE.Vector3(-38.78702046815429, 25.755079350421063, -41.304499264594796)
 
 const COMMAND_REGEX = /^(L0|L1|L2|R0|R1|R2)([0-9]+)$/;
 const COMMAND_EXTENSION_REGEX = /^(L0|L1|L2|R0|R1|R2)([0-9]+)(I|S)([0-9]+)$/;
@@ -140,7 +143,8 @@ class OSREmulator {
     const scene = new THREE.Scene();
 
     const camera = new THREE.PerspectiveCamera(50, this.#computeAspectRatio(), 0.1, 1000);
-    camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
+
+    camera.position.copy(this.#modelType === 'SR6' ? cameraPositionSR6 : cameraPosition);
     camera.up.set(0, 0, 1);
 
     const renderer = new THREE.WebGLRenderer();
@@ -149,7 +153,7 @@ class OSREmulator {
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.maxDistance = 700;
-    controls.target.set(cameraTarget.x, cameraTarget.y, cameraTarget.z);
+    controls.target.copy(this.#modelType === 'SR6' ? cameraTargetSR6 : cameraTarget);
     controls.update();
 
     this.camera = camera;
@@ -275,7 +279,6 @@ class OSREmulator {
   #updatePositions () {
     this.#osrModel.preRender(this.axes, this.#scale);
     this.#render();
-    this.#osrModel.postRender(this.axes, this.#scale);
 
     // Update the position of object helpers if enabled.
     if (this.#objectHelpers) {
