@@ -3,14 +3,14 @@ A simple, web-based graphical emulator for <a href="https://www.patreon.com/temp
 
 The following axes are available on the OSR2+:  
 
-**L0** (stroke/up) 
+**L0** (stroke/up)  
 **R0** (twist)  
 **R1** (roll)  
 **R2** (pitch)
 
 The SR6 model allows for an additional two axes:
 
-**L1** (forward/back)
+**L1** (forward/back)  
 **L2** (left/right)
 
 ## Quick Start
