@@ -24,7 +24,7 @@ In a browser, the OSR Emulator can be imported as an <a href="https://developer.
   <div id="canvas"></div>
 
   <script type="module">
-    import OSREmulator from 'https://unpkg.com/osr-emu';
+    import { OSREmulator } from 'https://unpkg.com/osr-emu';
 
     const osr = new OSREmulator('#canvas');
 
@@ -41,7 +41,7 @@ In a browser, the OSR Emulator can be imported as an <a href="https://developer.
   <div id="canvas"></div>
 
   <script type="module">
-    import OSREmulator from 'https://unpkg.com/osr-emu';
+    import { OSREmulator } from 'https://unpkg.com/osr-emu';
 
     const osr = new OSREmulator('#canvas', { 
       model: 'SR6' 
@@ -57,3 +57,14 @@ In a browser, the OSR Emulator can be imported as an <a href="https://developer.
 Live, interval, and speed based commands are supported on all available axes.
 
 See the following editable [codepen example](https://ayvajs.github.io/osr-emu/example.html).
+
+### NPM
+The OSR Emulator is also available as an NPM package.
+
+```
+npm install osr-emu
+```
+...
+```javascript
+import { OSREmulator } from 'osr-emu';
+```
