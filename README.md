@@ -81,4 +81,4 @@ This disposes of the 3D renderer and cancels resize event listeners.
 
 Live, interval, and speed based commands are supported on all available axes.
 
-See the following editable [codepen example](https://ayvajs.github.io/osr-emu/example.html).
+See the following editable [codepen example](https://ayvasoftware.github.io/osr-emu/example.html).
