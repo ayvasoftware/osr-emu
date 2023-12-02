@@ -53,11 +53,6 @@ In a browser, the OSR Emulator can be imported as an <a href="https://developer.
 </body>
 ```
 
-
-Live, interval, and speed based commands are supported on all available axes.
-
-See the following editable [codepen example](https://ayvajs.github.io/osr-emu/example.html).
-
 ### NPM
 The OSR Emulator is also available as an NPM package.
 
@@ -68,3 +63,22 @@ npm install osr-emu
 ```javascript
 import { OSREmulator } from 'osr-emu';
 ```
+### Resizing
+
+The emulator automatically sizes itself to the target element, and will resize itself when the target element's size changes.
+
+### Cleanup
+
+When you are finished with the emulator, you must destroy the instance in order to prevent memory leaks.
+
+```
+osr.destroy();
+```
+
+This disposes of the 3D renderer and cancels resize event listeners.
+
+### Examples
+
+Live, interval, and speed based commands are supported on all available axes.
+
+See the following editable [codepen example](https://ayvajs.github.io/osr-emu/example.html).
