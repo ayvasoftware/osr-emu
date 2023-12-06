@@ -5,12 +5,27 @@ import Axis from './lib/axis.js';
 import { forEachMesh } from './lib/util.js';
 import OSR2Model from './lib/models/osr2/osr2.js';
 import SR6Model from './lib/models/sr6/sr6.js';
+import SSR1Model from './lib/models/ssr1/ssr1.js';
 
-const cameraPosition = new THREE.Vector3(245.03116537126925, 427.3026288938325, 190.74318476308787);
-const cameraPositionSR6 = new THREE.Vector3(262.1988183293872, 487.3523930568582, 194.12937273009945);
+const modelInfoByType = {
+  'SR6': {
+    constructor: SR6Model,
+    cameraPosition: new THREE.Vector3(262.1988183293872, 487.3523930568582, 194.12937273009945),
+    controlTarget: new THREE.Vector3(-62.330470689438, 28.868408052774832, -17.219160432091634),
+  },
 
-const cameraTarget = new THREE.Vector3(-36.81235747311321, 6.186822929643268, 15.874049352801714);
-const cameraTargetSR6 = new THREE.Vector3(-62.330470689438, 28.868408052774832, -17.219160432091634);
+  'OSR2': {
+    constructor: OSR2Model,
+    cameraPosition: new THREE.Vector3(245.03116537126925, 427.3026288938325, 190.74318476308787),
+    controlTarget: new THREE.Vector3(-36.81235747311321, 6.186822929643268, 15.874049352801714),
+  },
+
+  'SSR1': {
+    constructor: SSR1Model,
+    cameraPosition: new THREE.Vector3(223.80161934006662, 284.7018829005695, 262.21634318512554),
+    controlTarget: new THREE.Vector3(13.385718044675617, -66.86882881039317, 111.35424951515378),
+  },
+}
 
 const COMMAND_REGEX = /^(L0|L1|L2|R0|R1|R2)([0-9]+)$/;
 const COMMAND_EXTENSION_REGEX = /^(L0|L1|L2|R0|R1|R2)([0-9]+)(I|S)([0-9]+)$/;
@@ -87,7 +102,7 @@ class OSREmulator {
     this.#scale = { ...this.#scale, ...(options?.scale || {}) };
     this.#sceneHelpers = options?.sceneHelpers ? [] : null;
     this.#objectHelpers = options?.objectHelpers ? [] : null;
-    this.#modelType = options?.model ?? 'OSR2';
+    this.#modelType = (options?.model ?? 'OSR2').toUpperCase();
 
     this.#initCanvas();
   }
@@ -144,7 +159,9 @@ class OSREmulator {
 
     const camera = new THREE.PerspectiveCamera(50, this.#computeAspectRatio(), 0.1, 1000);
 
-    camera.position.copy(this.#modelType === 'SR6' ? cameraPositionSR6 : cameraPosition);
+    const modelInfo = modelInfoByType[this.#modelType];
+
+    camera.position.copy(modelInfo.cameraPosition);
     camera.up.set(0, 0, 1);
 
     const renderer = new THREE.WebGLRenderer();
@@ -153,7 +170,7 @@ class OSREmulator {
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.maxDistance = 700;
-    controls.target.copy(this.#modelType === 'SR6' ? cameraTargetSR6 : cameraTarget);
+    controls.target.copy(modelInfo.controlTarget);
     controls.update();
 
     this.camera = camera;
@@ -212,7 +229,7 @@ class OSREmulator {
     fillLight.position.set(-225, 225, 225);
     fillLight.castShadow = true;
     for (const side of ['left', 'right', 'bottom', 'top']) {
-      fillLight.shadow.camera[side] *= 25;
+      fillLight.shadow.camera[side] *= 50;
     }
 
     const backLight = new THREE.PointLight(0xFFFFFF);
@@ -226,6 +243,12 @@ class OSREmulator {
     this.fillLight = fillLight;
     this.backLight = backLight;
     this.ambientLight = ambientLight;
+    
+    if (this.#modelType === 'SSR1') {
+      // Slight adjustents to lighting for SSR1...
+      this.keyLight.position.z = 220;
+      this.backLight.position.y = -200;
+    }
 
     scene.add(keyLight);
     scene.add(fillLight);
@@ -246,7 +269,9 @@ class OSREmulator {
   }
 
   #loadModel (scene) {
-    this.#osrModel = this.#modelType == 'OSR2' ? new OSR2Model() : new SR6Model();
+    const Model = modelInfoByType[this.#modelType].constructor;
+
+    this.#osrModel = new Model();
     
     const osrGroup = new THREE.Group();
 
